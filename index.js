@@ -69,7 +69,10 @@ const PURECLOUD_ENVIRONMENT = process.env.PURECLOUD_ENVIRONMENT || 'mypurecloud.
 
 const HEROKU_APPNAME = process.env.HEROKU_APPNAME;
 const HEROKU_POLLINGINTERVAL = 25 * 60 * 1000; // In milliseconds. Here, 25 minutes
-// Smooch
+
+//#endregion
+
+//#region Smooch
 
 const smooch = new Smooch({
     keyId: SMOOCH_KEYID,
