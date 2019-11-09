@@ -41,6 +41,18 @@ Code is provided as-is. Do not contact Genesys Customer Care if you have issues.
 * Main entry point is `index.js`. Code is commented.
 * You can run `npm run start_dev` to start the service and restart when file contents change
 
+## Heroku
+
+To deploy this service to Heroku, do the following:
+
+* Follow the steps to install the [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli#download-and-install)
+* Run `heroku login` to connect the Heroku CLI to your Heroku account
+* Run `heroku create` from the root of this repository to create a new remote. Note the remote url that was assigned to you (e.g. [https://serene-ravine-92441.herokuapp.com/](https://serene-ravine-92441.herokuapp.com/))
+* Run `git remote -v` to make sure that the remote was added to your list of git remotes
+* Run `git push heroku master` to push your code to the Heroku remote
+* Create a new webhook integration in your Smoosh app with the Heroku followed by `/messages` (e.g. https://serene-ravine-92441.herokuapp.com/messages). Select the `AppUser messages` trigger and click on `Create webhook`.
+* This service contains code (search for `startKeepAlive()`) to ping the app every 20 minutes. Make sure you set the `HEROKU_APPNAME` environment variable to your app name (e.g. serene-raving-92441)
+
 ## Credits
 
 * Genesys

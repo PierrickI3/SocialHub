@@ -35,25 +35,23 @@ Events from Smooch and PureCloud are handled and the correct targets are found u
 
     . Pass first message from Facebook to PureCloud (says conversation is not active)
     . If smooch conversation id already exists in the conversationsMap array, try to get last agent. Need to save last agentUserId. Do it from Architect?
-    . Can it work in Lambda or Heroku?
     . Implement typing activity: https://docs.smooch.io/rest/?javascript#conversation-activity
     . Age verification from Architect. 3rd party service or can get from Smooch?
     . Handle schedules in Architect
-    . Disconnect the smooch conversation or send a message when PC agent disconnects?
-    . How to know when to disconnect PureCloud conversation from Smooch?
     . How to easily support other providers?
     . How to get Facebook profile pic?
     . Update documentation
 
 */
 
-//#region Imports
+//#region Imports/Requires
 
 const express = require('express');
 const bodyParser = require('body-parser');
 const Smooch = require('smooch-core');
 const request = require('request');
 const WebSocket = require('ws');
+const http = require('http'); //Only used if pinging Heroku app
 
 //#endregion
 
@@ -69,6 +67,9 @@ const PURECLOUD_DEPLOYMENTID = process.env.PURECLOUD_DEPLOYMENTID || '7ff41a97-0
 const PURECLOUD_QUEUENAME = process.env.PURECLOUD_QUEUENAME || 'AllAgents';
 const PURECLOUD_ENVIRONMENT = process.env.PURECLOUD_ENVIRONMENT || 'mypurecloud.ie';
 
+const HEROKU_APPNAME = process.env.HEROKU_APPNAME;
+//const HEROKU_POLLINGINTERVAL = 25 * 60 * 1000; // In milliseconds. Here, 25 minutes
+const HEROKU_POLLINGINTERVAL = 1 * 5 * 1000; // In milliseconds. Here, 25 minutes
 // Smooch
 
 const smooch = new Smooch({
@@ -83,6 +84,47 @@ const smooch = new Smooch({
 
 const app = express();
 app.use(bodyParser.json());
+
+//#endregion
+
+//#region Heroku
+
+var startTime = new Date().getTime();
+function startKeepAlive() {
+    if (!HEROKU_APPNAME) {
+        console.log('Heroku app monitoring disabled');
+        return;
+    }
+
+    console.log(`Enabling app monitoring for: https://${HEROKU_APPNAME}.herokuapp.com:${PORT}/ every ${HEROKU_POLLINGINTERVAL/1000} second(s)`);
+    setInterval(function() {
+        console.log('Interval start');
+        if(new Date().getTime() - startTime > 61200000){ // 17 hours (Herokuy only allows free apps to run for 18 hours)
+            clearInterval(interval);
+            return;
+        }
+        console.log('Pinging...');
+        var options = {
+            host: `https://${HEROKU_APPNAME}.herokuapp.com`,
+            port: 443,
+            path: '/ping'
+        };
+        http.get(options, function(res) {
+            res.on('data', function(chunk) {
+                try {
+                    // optional logging... disable after it's working
+                    console.log("HEROKU RESPONSE: " + chunk);
+                } catch (err) {
+                    console.log(err.message);
+                }
+            });
+        }).on('error', function(err) {
+            console.log("Error: " + err.message);
+        });
+    }, HEROKU_POLLINGINTERVAL);
+}
+
+startKeepAlive();
 
 //#endregion
 
@@ -216,6 +258,12 @@ app.post('/messages', async (req, res) => {
     } finally {
         res.end();
     }
+});
+
+// Only used if Heroku monitoring is enabled
+app.get('/ping', async (req, res) => {
+    console.log('PING');
+    res.end();
 });
 
 // Posts a message to a Smooch conversation
