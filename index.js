@@ -21,6 +21,7 @@ All conversation-related data is kept in an array called "conversationsMap", str
             webSocket: xxxxxx,      // NOT SURE YET. Reference to webSocket variable?
             externalUserId: '',     // PureCloud participant representing the Smooch side of the chat (not PureCloud agent)
             agentUserId: '',        // PureCloud agent participant,
+            workflowId: '',         // PureCloud workflow id
             webSocket: <WEBSOCKET>  // Reference to webSocket variable
         }
    }
@@ -33,12 +34,12 @@ Events from Smooch and PureCloud are handled and the correct targets are found u
 /*
     TODO
 
-    . Pass first message from Facebook to PureCloud (says conversation is not active)
+    . Pass first message from Facebook to PureCloud. Says conversation is not active, even after the websocket is open. Does it require an agent?
     . If smooch conversation id already exists in the conversationsMap array, try to get last agent. Need to save last agentUserId. Do it from Architect?
     . Heroku keepAlive (can't reach serene-ravine-92400.herokuapp.com from within heroku?)
-    . Implement typing activity: https://docs.smooch.io/rest/?javascript#conversation-activity from Facebook to PureCloud (set senderId)
-    . Age verification from Architect. 3rd party service or can get from Smooch?
-    . Handle schedules in Architect
+    . Implement typing activity: https://docs.smooch.io/rest/?javascript#conversation-activity from Facebook to PureCloud (set senderId) - NOT RECEIVING NOTIFICATION FROM SMOOCH (trigger is enabled)
+    . Age verification from Architect. 3rd party service or can get from Smooch? (FRANK)
+    . Handle multiple smooch conversation id to support multiple channels
     . How to easily support other providers?
     . How to get Facebook profile pic?
     . Update documentation
@@ -71,19 +72,11 @@ const PURECLOUD_ENVIRONMENT = process.env.PURECLOUD_ENVIRONMENT || 'mypurecloud.
 const HEROKU_APPNAME = process.env.HEROKU_APPNAME;
 const HEROKU_POLLINGINTERVAL = 25 * 60 * 1000; // In milliseconds. Here, 25 minutes
 
-//#endregion
-
-//#region Smooch
-
 const smooch = new Smooch({
     keyId: SMOOCH_KEYID,
     secret: SMOOCH_SECRET,
     scope: 'app'
 });
-
-//#endregion
-
-//#region Express
 
 const app = express();
 app.use(bodyParser.json());
@@ -133,7 +126,7 @@ var conversationsMap = [], jwtToken;
 
 //#region Conversations Map functions
 
-function addSmoochConversationToMap(smoochConversationId, smoochAppId, smoochUserId, firstName, lastName) {
+function addSmoochConversation(smoochConversationId, smoochAppId, smoochUserId, firstName, lastName) {
     // Check if the conversation already exists in the mapping array
     let existingSmoochConversation = conversationsMap.filter(c => c.smooch.conversationId === smoochConversationId);
     console.log('Existing conversation:', existingSmoochConversation);
@@ -153,7 +146,7 @@ function addSmoochConversationToMap(smoochConversationId, smoochAppId, smoochUse
     }
 }
 
-function updatePureCloudConversation(smoochConversationId, pureCloudConversationId, externalUserId, agentUserId, webSocket) {
+function updatePureCloudConversation(smoochConversationId, pureCloudConversationId, externalUserId, agentUserId, webSocket, workflowId) {
     console.log(`Updating Smooch conversation (${smoochConversationId}) with PureCloud conversation id (${pureCloudConversationId}), PureCloud external user id (${externalUserId}) and PureCloud agent user id (${agentUserId})`);
 
     for (let index = 0; index < conversationsMap.length; index++) {
@@ -166,12 +159,14 @@ function updatePureCloudConversation(smoochConversationId, pureCloudConversation
             if (externalUserId) conversationsMap[index].purecloud.externalUserId = externalUserId;
             if (agentUserId) conversationsMap[index].purecloud.agentUserId = agentUserId;
             if (webSocket) conversationsMap[index].purecloud.webSocket = webSocket;
+            if (workflowId) conversationsMap[index].purecloud.workflowId = workflowId;
 
-            console.log(`Smooch conversation ${smoochConversationId} updated: ${JSON.stringify(returnConversation, null, 4)}`);
             returnConversation = conversationsMap[index];
+            console.log(`Smooch conversation ${smoochConversationId} updated: ${JSON.stringify(returnConversation, null, 4)}`);
             break;
         }
     }
+    console.log('Updated conversation:', returnConversation);
     return returnConversation;
 }
 
@@ -200,30 +195,13 @@ function getConversationBySmoochConversationId(smoochConversationId) {
     }
 }
 
-function getPureCloudMemberInfo(conversationId, memberId) {
-    return new Promise((resolve, reject) => {
-        let options = {
-            url: `https://api.${PURECLOUD_ENVIRONMENT}/api/v2/webchat/guest/conversations/${conversationId}/members/${memberId}`,
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `bearer ${jwtToken}`
-            }
-        };
-
-        request(options, function (error, response, body) {
-            if (error) {
-                reject(error);
-                return;
-            }
-
-            if (response.statusCode == 200) {
-                resolve(JSON.parse(body));
-            } else {
-                reject(error);
-            }
-        });
-    });
+function getConversationByPureCloudConversationId(pureCloudConversationId) {
+    let conversation = conversationsMap.filter(c => c.purecloud.conversationId === pureCloudConversationId);
+    if (conversation) {
+        return conversation[0];
+    } else {
+        return undefined;
+    }
 }
 
 //#endregion
@@ -243,7 +221,7 @@ app.post('/messages', async (req, res) => {
             const firstName = req.body.appUser.givenName;
             const lastName = req.body.appUser.surname;
 
-            addSmoochConversationToMap(smoochConversationId, smoochAppId, smoochUserId, firstName, lastName);
+            addSmoochConversation(smoochConversationId, smoochAppId, smoochUserId, firstName, lastName);
 
             // Forward message to PureCloud
             let conversation = getConversationBySmoochConversationId(smoochConversationId);
@@ -310,6 +288,33 @@ function postSmoochMessage(smoochAppId, smoochUserId, message) {
 //#endregion
 
 //#region PureCloud Chat
+
+// Gets more information about a PureCloud chat member
+function getPureCloudMemberInfo(conversationId, memberId) {
+    return new Promise((resolve, reject) => {
+        let options = {
+            url: `https://api.${PURECLOUD_ENVIRONMENT}/api/v2/webchat/guest/conversations/${conversationId}/members/${memberId}`,
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `bearer ${jwtToken}`
+            }
+        };
+
+        request(options, function (error, response, body) {
+            if (error) {
+                reject(error);
+                return;
+            }
+
+            if (response.statusCode == 200) {
+                resolve(JSON.parse(body));
+            } else {
+                reject(error);
+            }
+        });
+    });
+}
 
 // Creates a PureCloud chat conversation
 async function createPureCloudChat(firstName, lastName, smoochConversationId, initialMessage) {
@@ -378,6 +383,7 @@ async function createPureCloudChat(firstName, lastName, smoochConversationId, in
                         switch (messageData.eventBody.bodyType) {
                             case 'member-join': // A new participant has joined the PureCloud chat conversation
                                 await getPureCloudMemberInfo(messageData.eventBody.conversation.id, messageData.eventBody.sender.id).then((pureCloudMemberInfo) => {
+                                    console.log('member-join:', pureCloudMemberInfo);
                                     switch (pureCloudMemberInfo.role) {
                                         case 'AGENT':
                                             //postSmoochMessage(currentConversation.smooch.appId, currentConversation.smooch.userId, `Agent: ${pureCloudMemberInfo.displayName} has joined this conversation.`);
@@ -389,6 +395,7 @@ async function createPureCloudChat(firstName, lastName, smoochConversationId, in
                                             //postSmoochMessage(currentConversation.smooch.appId, currentConversation.smooch.userId, `ACD: ${pureCloudMemberInfo.displayName} has joined this conversation.`);
                                             break;
                                         case 'WORKFLOW':
+                                            updatePureCloudConversation(smoochConversationId, messageData.eventBody.conversation.id, undefined, undefined, undefined, messageData.eventBody.sender.id);
                                             //postSmoochMessage(currentConversation.smooch.appId, currentConversation.smooch.userId, `Workflow: ${pureCloudMemberInfo.displayName} has joined this conversation.`);
                                             break;
                                         default:
@@ -399,7 +406,6 @@ async function createPureCloudChat(firstName, lastName, smoochConversationId, in
                                 }).catch((error) => {
                                     console.error(error);
                                 });
-
                                 break;
                             case 'member-leave': // A participant has left the PureCloud chat conversation
                                 await getPureCloudMemberInfo(messageData.eventBody.conversation.id, messageData.eventBody.sender.id).then((pureCloudMemberInfo) => {
@@ -428,8 +434,8 @@ async function createPureCloudChat(firstName, lastName, smoochConversationId, in
                             case 'standard':
                                 // A message has been added to the chat. Use sender.id to identify the author of the message.
                                 console.log(`Sender id ${messageData.eventBody.sender.id} === agentUserId ${currentConversation.purecloud.agentUserId}?`);
-                                if (messageData.eventBody.sender.id === currentConversation.purecloud.agentUserId) {
-                                    // This is a message coming from the PureCloud agent, send it to Smooch
+                                if (messageData.eventBody.sender.id === currentConversation.purecloud.agentUserId || messageData.eventBody.sender.id === currentConversation.purecloud.workflowId) {
+                                    // This is a message coming from the PureCloud agent or from Architect, send it to Smooch
                                     postSmoochMessage(currentConversation.smooch.appId, currentConversation.smooch.userId, messageData.eventBody.body);
                                 }
                                 break;
@@ -456,7 +462,7 @@ async function createPureCloudChat(firstName, lastName, smoochConversationId, in
                                             postSmoochMessage(currentConversation.smooch.appId, currentConversation.smooch.userId, `Hello, my name is ${pureCloudMemberInfo.displayName}. How can I help you?`);
                                             break;
                                         case 'CUSTOMER':
-                                            postSmoochMessage(currentConversation.smooch.appId, currentConversation.smooch.userId, `Welcome!`);
+                                            postSmoochMessage(currentConversation.smooch.appId, currentConversation.smooch.userId, `Hello and welcome!`);
                                             break;
                                         case 'ACD':
                                             postSmoochMessage(currentConversation.smooch.appId, currentConversation.smooch.userId, `Please wait for an available agent...`);
@@ -536,12 +542,21 @@ function postPureCloudMessage(conversationId, memberId, message, messageType) {
     };
 
     request(options, function (error, response, body) {
+        var info = JSON.parse(body);
         if (!error && response.statusCode == 200) {
-            var info = JSON.parse(body);
             console.log('POST /messages response:', info);
         } else {
-            console.error(body);
-            console.error(response.statusCode);
+            if (info.status === 400 && info.code === 'chat.error.conversation.state') {
+                console.log('PureCloud conversation no longer exists (or is disconnected)');
+                let conversation = getConversationByPureCloudConversationId(conversationId);
+                if (conversation) {
+                    clearPureCloudConversation(conversation.smooch.conversationId);
+                    //TODO Resend the message in a new conversation?
+                }
+            } else {
+                console.error(body);
+                console.error(response.statusCode);    
+            }
         }
     });
 }
