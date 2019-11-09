@@ -2,7 +2,7 @@
 
 This service acts as a bridge between a Smooch webhook and the PureCloud Guest Chat API to allow social media messages to be sent to a PureCloud agent and allow 2-way communications.
 
-Code is provided as-is. Do not contact Genesys Customer Care if you have issues. Use the `Issues` tab instead and create an issue.
+>Code is provided as-is. Do not contact Genesys Customer Care if you have issues. Use the `Issues` tab instead and create an issue.
 
 ## Requirements
 
@@ -19,7 +19,7 @@ Code is provided as-is. Do not contact Genesys Customer Care if you have issues.
 * Create a new key/secret pair (TODO)
 * Use the environment variables in the `How to use` sections to specify you Key id and secret
 
-To add social media channels, click on `Integrations` in the top Smooch menu when viewing your app settings
+>To add social media channels, click on `Integrations` in the top Smooch menu when viewing your app settings
 
 ### PureCloud configuration
 
