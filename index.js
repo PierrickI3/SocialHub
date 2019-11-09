@@ -385,7 +385,7 @@ async function createPureCloudChat(firstName, lastName, smoochConversationId, in
                                             postSmoochMessage(currentConversation.smooch.appId, currentConversation.smooch.userId, `Hello, my name is ${pureCloudMemberInfo.displayName}. How can I help you?`);
                                             break;
                                         case 'CUSTOMER':
-                                            postSmoochMessage(currentConversation.smooch.appId, currentConversation.smooch.userId, `Welcome to PMI!`);
+                                            postSmoochMessage(currentConversation.smooch.appId, currentConversation.smooch.userId, `Welcome!`);
                                             break;
                                         case 'ACD':
                                             postSmoochMessage(currentConversation.smooch.appId, currentConversation.smooch.userId, `Please wait for an available agent...`);
