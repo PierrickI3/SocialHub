@@ -96,7 +96,7 @@ function startKeepAlive() {
         return;
     }
 
-    console.log(`Enabling app monitoring for: https://${HEROKU_APPNAME}.herokuapp.com:${PORT}/ every ${HEROKU_POLLINGINTERVAL/1000} second(s)`);
+    console.log(`Enabling app monitoring for: https://${HEROKU_APPNAME}.herokuapp.com every ${HEROKU_POLLINGINTERVAL/1000} second(s)`);
     setInterval(function() {
         console.log('Interval start');
         if(new Date().getTime() - startTime > 61200000){ // 17 hours (Herokuy only allows free apps to run for 18 hours)
@@ -106,7 +106,6 @@ function startKeepAlive() {
         console.log('Pinging...');
         var options = {
             host: `https://${HEROKU_APPNAME}.herokuapp.com`,
-            port: 443,
             path: '/ping'
         };
         http.get(options, function(res) {
