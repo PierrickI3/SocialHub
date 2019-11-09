@@ -2,7 +2,7 @@
 
 /*
 
-Look at the README.md file for a more high-leve of this server.
+Look at the README.md file for a high-level overview of this server. This code is best viewed in Microsoft Visual Studio Code. Use the 'Fold All' functionality to fold all code regions.
 
 This file contains the code to communicate between Smooch and Genesys PureCloud.
 All conversation-related data is kept in an array called "conversationsMap", structured as follows:
@@ -18,7 +18,6 @@ All conversation-related data is kept in an array called "conversationsMap", str
         },
         purecloud: {
             conversationId: '',     // PureCloud conversation id
-            webSocket: xxxxxx,      // NOT SURE YET. Reference to webSocket variable?
             externalUserId: '',     // PureCloud participant representing the Smooch side of the chat (not PureCloud agent)
             agentUserId: '',        // PureCloud agent participant,
             workflowId: '',         // PureCloud workflow id
@@ -29,20 +28,15 @@ All conversation-related data is kept in an array called "conversationsMap", str
 
 Events from Smooch and PureCloud are handled and the correct targets are found using the array above using dedicated functions.
 
-*/
 
-/*
-    TODO
-
+==> TODO
     . Pass first message from Facebook to PureCloud. Says conversation is not active, even after the websocket is open. Does it require an agent?
     . If smooch conversation id already exists in the conversationsMap array, try to get last agent. Need to save last agentUserId. Do it from Architect?
     . Heroku keepAlive (can't reach serene-ravine-92400.herokuapp.com from within heroku?)
     . Implement typing activity: https://docs.smooch.io/rest/?javascript#conversation-activity from Facebook to PureCloud (set senderId) - NOT RECEIVING NOTIFICATION FROM SMOOCH (trigger is enabled)
     . Age verification from Architect. 3rd party service or can get from Smooch? (FRANK)
-    . Handle multiple smooch conversation id to support multiple channels
+    . How to get Facebook profile pic? I tried to set avatarImageUrl but it does not show in PureCloud
     . How to easily support other providers?
-    . How to get Facebook profile pic?
-    . Update documentation
 
 */
 
@@ -54,6 +48,12 @@ const Smooch = require('smooch-core');
 const request = require('request');
 const WebSocket = require('ws');
 const http = require('http'); //Only used if pinging Heroku app
+
+//#endregion
+
+//#region Global vars
+
+var conversationsMap = [], jwtToken;
 
 //#endregion
 
@@ -121,8 +121,6 @@ function startKeepAlive() {
 startKeepAlive();
 
 //#endregion
-
-var conversationsMap = [], jwtToken;
 
 //#region Conversations Map functions
 
@@ -287,7 +285,7 @@ function postSmoochMessage(smoochAppId, smoochUserId, message) {
 
 //#endregion
 
-//#region PureCloud Chat
+//#region PureCloud
 
 // Gets more information about a PureCloud chat member
 function getPureCloudMemberInfo(conversationId, memberId) {
@@ -329,7 +327,7 @@ async function createPureCloudChat(firstName, lastName, smoochConversationId, in
         },
         "memberInfo": {
             "displayName": `${firstName} ${lastName}`,
-            //"profileImageUrl": "http://amaovs.xp3.biz/img/photo/sample-image.jpg",
+            "avatarImageUrl": "https://amaovs.xp3.biz/img/photo/sample-image.jpg",
             "customFields": {
                 "customField1Label": "First Name",
                 "customField1": firstName,
@@ -563,7 +561,11 @@ function postPureCloudMessage(conversationId, memberId, message, messageType) {
 
 //#endregion
 
+//#region Node.js Server
+
 // Start server
 app.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
+//#endregion
