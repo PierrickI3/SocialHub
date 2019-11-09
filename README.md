@@ -75,4 +75,4 @@ To deploy this service to Heroku, do the following:
 
 * Genesys
     * @PierrickI3 (that's me)
-    * @szlaskidaniel (thanks for the help with the Guest Chat API late in an hotel room in Germany!)
+    * @szlaskidaniel (thanks for the help with the Guest Chat API late in a hotel room in Germany)
