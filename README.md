@@ -7,8 +7,8 @@ This service acts as a bridge between a Smooch webhook and the PureCloud Guest C
 ## Requirements
 
 * [Node.js](https://node.js)
-* [nGrok](https://ngrok.com) to expose your service with a `https` url
-* A [PureCloud](https://genesys.com) organization
+* [nGrok](https://ngrok.com) to expose your service with a `https` url if you plan on running this service on your machine (Heroku instructions are also available in this README)
+* A [Genesys PureCloud](https://www.genesys.com/platform/purecloud) organization
 * A [Smooch](https://smooch.io) account (free trials are available)
 
 ## Configuration
@@ -16,7 +16,7 @@ This service acts as a bridge between a Smooch webhook and the PureCloud Guest C
 ### Smooch configuration
 
 * Follow the steps to create a new Smooch App with at least one configured channel (e.g. Facebook Messenger) 
-* Create a new key/secret pair (TODO)
+* Create a new key/secret pair in your app settings (menu on top of page)
 * Use the environment variables in the `How to use` sections to specify you Key id and secret
 
 >To add social media channels, click on `Integrations` in the top Smooch menu when viewing your app settings
@@ -25,7 +25,7 @@ This service acts as a bridge between a Smooch webhook and the PureCloud Guest C
 
 * Create a new WebChat deployment with a `Third Party` type. Note its id as you will need it later on.
 * Note your org id by going to Admin->Organization Settings->Show advanced details
-* Make sure you have a queue to send your chat requests to
+* Make sure you have a queue to send your chat requests to. If not, well... create one.
 
 ## How to use
 
