@@ -68,8 +68,7 @@ const PURECLOUD_QUEUENAME = process.env.PURECLOUD_QUEUENAME || 'AllAgents';
 const PURECLOUD_ENVIRONMENT = process.env.PURECLOUD_ENVIRONMENT || 'mypurecloud.ie';
 
 const HEROKU_APPNAME = process.env.HEROKU_APPNAME;
-//const HEROKU_POLLINGINTERVAL = 25 * 60 * 1000; // In milliseconds. Here, 25 minutes
-const HEROKU_POLLINGINTERVAL = 1 * 5 * 1000; // In milliseconds. Here, 25 minutes
+const HEROKU_POLLINGINTERVAL = 25 * 60 * 1000; // In milliseconds. Here, 25 minutes
 // Smooch
 
 const smooch = new Smooch({
@@ -98,16 +97,15 @@ function startKeepAlive() {
 
     console.log(`Enabling app monitoring for: https://${HEROKU_APPNAME}.herokuapp.com every ${HEROKU_POLLINGINTERVAL/1000} second(s)`);
     setInterval(function() {
-        console.log('Interval start');
         if(new Date().getTime() - startTime > 61200000){ // 17 hours (Herokuy only allows free apps to run for 18 hours)
             clearInterval(interval);
             return;
         }
-        console.log('Pinging...');
         var options = {
             host: `https://${HEROKU_APPNAME}.herokuapp.com`,
             path: '/ping'
         };
+        console.log('PING!');
         http.get(options, function(res) {
             res.on('data', function(chunk) {
                 try {
