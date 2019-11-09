@@ -74,5 +74,5 @@ To deploy this service to Heroku, do the following:
 ## Credits
 
 * Genesys
-    * Pierrick Lozach
-    * Daniel Szlaski (thanks for the help with the Guest Chat API!)
+    * @PierrickI3 (that's me)
+    * @szlaskidaniel (thanks for the help with the Guest Chat API late in an hotel room in Germany!)
