@@ -68,7 +68,7 @@ const PURECLOUD_QUEUENAME = process.env.PURECLOUD_QUEUENAME || 'AllAgents';
 const PURECLOUD_ENVIRONMENT = process.env.PURECLOUD_ENVIRONMENT || 'mypurecloud.ie';
 
 const HEROKU_APPNAME = process.env.HEROKU_APPNAME;
-const HEROKU_POLLINGINTERVAL = 25 * 60 * 1000; // In milliseconds. Here, 25 minutes
+const HEROKU_POLLINGINTERVAL = 1 * 10 * 1000; // In milliseconds. Here, 25 minutes
 
 //#endregion
 
