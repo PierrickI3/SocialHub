@@ -20,7 +20,7 @@ Code is provided as-is. Do not contact Genesys Customer Care if you have issues.
 * Note your org id by going to Admin->Organization Settings->Show advanced details
 * Make sure you have a queue to send your chat requests to
 
-## How to use
+## How to use (local deployment)
 * Clone this repository: `git clone https://...`
 * Run `npm i` in the new folder
 * You need to update the PureCloud and Smooch configuration before starting. For this, you have two choices:
@@ -37,24 +37,31 @@ Code is provided as-is. Do not contact Genesys Customer Care if you have issues.
 * Configure a new webhook in your Smooch app pointing to your publically-exposed service endpoint followed by `/messages` (e.g. `https://fa0291e0.ngrok.io/messages`). The webhook should be configured with a `message:AppUser` trigger (other triggers are not currently used)
 * Send a message via the channel monitored by Smooch (e.g. Facebook Messenger). This should create chat conversations in PureCloud. Make sure you go `On Queue` to receive these chats.
 
-## Developer
-* Main entry point is `index.js`. Code is commented.
-* You can run `npm run start_dev` to start the service and restart when file contents change
-
-## Heroku
+## How to use (Heroku deployment)
 
 To deploy this service to Heroku, do the following:
 
 * Follow the steps to install the [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli#download-and-install)
 * Run `heroku login` to connect the Heroku CLI to your Heroku account
 * Run `heroku create` from the root of this repository to create a new remote. Note the remote url that was assigned to you (e.g. [https://serene-ravine-92441.herokuapp.com/](https://serene-ravine-92441.herokuapp.com/))
+* Set the required environment variables by running `heroku config:set <ENVIRONMENT VARIABLE NAME>=<ENVIRONMENT VARIABLE VALUE>` (e.g. `heroku config:set PURECLOUD_ENVIRONMENT=mypurecloud.ie`). Environment variables are listed in the `How to use` section above.
 * Run `git remote -v` to make sure that the remote was added to your list of git remotes
 * Run `git push heroku master` to push your code to the Heroku remote
 * Create a new webhook integration in your Smoosh app with the Heroku followed by `/messages` (e.g. https://serene-ravine-92441.herokuapp.com/messages). Select the `AppUser messages` trigger and click on `Create webhook`.
-* This service contains code (search for `startKeepAlive()`) to ping the app every 20 minutes. Make sure you set the `HEROKU_APPNAME` environment variable to your app name (e.g. serene-raving-92441)
+* This service contains code (search for `startKeepAlive()`) to ping the app every 25 minutes by default and stop after 17 hours. Make sure you set the `HEROKU_APPNAME` environment variable to your app name (e.g. serene-raving-92441) by using `heroku config:set HEROKU_APPNAME=<YOUR APP NAME>` (e.g. `heroku config:set HEROKU_APPNAME=serene-raving-92441`)
+
+### Heroku CLI useful commands
+
+* To view logs, run `heroku logs -t`
+* To stop your dyno, run `heroku stop <APP NAME>` (e.g. `heroku stop serene-ravine-92441`)
+
+## Developer
+* Main entry point is `index.js`. Code has plenty of comments.
+* Set the environment variables on your local machine (see `How to use` section)
+* You can run `npm run start_dev` to start the service. Service will restart when file contents change
 
 ## Credits
 
 * Genesys
     * Pierrick Lozach
-    * Daniel Szlaski
+    * Daniel Szlaski (thanks for the help with the Guest Chat API!)
