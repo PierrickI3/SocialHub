@@ -35,7 +35,8 @@ Events from Smooch and PureCloud are handled and the correct targets are found u
 
     . Pass first message from Facebook to PureCloud (says conversation is not active)
     . If smooch conversation id already exists in the conversationsMap array, try to get last agent. Need to save last agentUserId. Do it from Architect?
-    . Implement typing activity: https://docs.smooch.io/rest/?javascript#conversation-activity
+    . Heroku keepAlive (can't reach serene-ravine-92400.herokuapp.com from within heroku?)
+    . Implement typing activity: https://docs.smooch.io/rest/?javascript#conversation-activity from Facebook to PureCloud (set senderId)
     . Age verification from Architect. 3rd party service or can get from Smooch?
     . Handle schedules in Architect
     . How to easily support other providers?
@@ -260,6 +261,28 @@ app.post('/messages', async (req, res) => {
     }
 });
 
+function setTypingIndicator(appId, userId) {
+    smooch.appUsers.conversationActivity({
+        appId: appId,
+        userId: userId,
+        activityProps: {
+            role: 'appMaker',
+            type: 'typing:start'
+        }
+    }).then((response) => {
+        setInterval(() => {
+            smooch.appUsers.conversationActivity({
+                appId: appId,
+                userId: userId,
+                activityProps: {
+                    role: 'appMaker',
+                    type: 'typing:stop'
+                }
+            });        
+        }, 3 * 1000); // Set for 3 seconds following recommendation: https://developer.mypurecloud.com/api/webchat/guestchat.html#_span_style__text_transform__none___typing_indicator__event__span_
+    });
+}
+
 // Only used if Heroku monitoring is enabled
 app.get('/ping', async (req, res) => {
     console.log('PING');
@@ -416,7 +439,7 @@ async function createPureCloudChat(firstName, lastName, smoochConversationId, in
                         }
                         break;
                     case 'typing-indicator':
-                        //TODO
+                        setTypingIndicator(currentConversation.smooch.appId, currentConversation.smooch.userId);
                         break;
                     case 'member-change':
                         // A participant state has changed
