@@ -1,6 +1,4 @@
-'use strict';
-
-/*
+/******************************************************************************
 
 Look at the README.md file for a high-level overview of this server. This code is best viewed in Microsoft Visual Studio Code. Use the 'Fold All' functionality to fold all code regions.
 
@@ -26,19 +24,12 @@ All conversation-related data is kept in an array called "conversationsMap", str
    }
 ]
 
-Events from Smooch and PureCloud are handled and the correct targets are found using the array above using dedicated functions.
+Events from Smooch come in via REST API (/message)
+Events from PureCloud are handled via web sockets opened when the chats are created
 
+*******************************************************************************/
 
-==> TODO
-    . Pass first message from Facebook to PureCloud. Says conversation is not active, even after the websocket is open. Does it require an agent?
-    . If smooch conversation id already exists in the conversationsMap array, try to get last agent. Need to save last agentUserId. Do it from Architect?
-    . Heroku keepAlive (can't reach serene-ravine-92400.herokuapp.com from within heroku?)
-    . Implement typing activity: https://docs.smooch.io/rest/?javascript#conversation-activity from Facebook to PureCloud (set senderId) - NOT RECEIVING NOTIFICATION FROM SMOOCH (trigger is enabled)
-    . Age verification from Architect. 3rd party service or can get from Smooch? (FRANK)
-    . How to get Facebook profile pic? I tried to set avatarImageUrl but it does not show in PureCloud
-    . How to easily support other providers?
-
-*/
+'use strict';
 
 //#region Imports/Requires
 
@@ -92,9 +83,9 @@ function startKeepAlive() {
         return;
     }
 
-    console.log(`Enabling app monitoring for: https://${HEROKU_APPNAME}.herokuapp.com every ${HEROKU_POLLINGINTERVAL/1000} second(s)`);
-    setInterval(function() {
-        if(new Date().getTime() - startTime > 61200000){ // 17 hours (Herokuy only allows free apps to run for 18 hours)
+    console.log(`Enabling app monitoring for: https://${HEROKU_APPNAME}.herokuapp.com every ${HEROKU_POLLINGINTERVAL / 1000} second(s)`);
+    setInterval(function () {
+        if (new Date().getTime() - startTime > 61200000) { // 17 hours (Herokuy only allows free apps to run for 18 hours)
             clearInterval(interval);
             return;
         }
@@ -103,8 +94,8 @@ function startKeepAlive() {
             path: '/ping'
         };
         console.log('PING!');
-        http.get(options, function(res) {
-            res.on('data', function(chunk) {
+        http.get(options, function (res) {
+            res.on('data', function (chunk) {
                 try {
                     // optional logging... disable after it's working
                     console.log("HEROKU RESPONSE: " + chunk);
@@ -112,7 +103,7 @@ function startKeepAlive() {
                     console.log(err.message);
                 }
             });
-        }).on('error', function(err) {
+        }).on('error', function (err) {
             console.log("Error: " + err.message);
         });
     }, HEROKU_POLLINGINTERVAL);
@@ -164,7 +155,14 @@ function updatePureCloudConversation(smoochConversationId, pureCloudConversation
             break;
         }
     }
-    console.log('Updated conversation:', returnConversation);
+
+    // Do not display webSocket if there's one
+    let displayReturnConversation = returnConversation;
+    if (displayReturnConversation.purecloud && displayReturnConversation.purecloud.webSocket) {
+        delete displayReturnConversation.purecloud.webSocket;
+    }
+    console.log('Updated conversation:', displayReturnConversation);
+
     return returnConversation;
 }
 
@@ -177,7 +175,7 @@ function clearPureCloudConversation(smoochConversationId) {
                 conversationsMap[index].purecloud.webSocket.terminate();
             }
             conversationsMap[index].purecloud = {};
-            
+
             console.log(`PureCloud conversation from Smooch conversation ${smoochConversationId} cleared`);
             break;
         }
@@ -254,7 +252,7 @@ function setTypingIndicator(appId, userId) {
                     role: 'appMaker',
                     type: 'typing:stop'
                 }
-            });        
+            });
         }, 3 * 1000); // Set for 3 seconds following recommendation: https://developer.mypurecloud.com/api/webchat/guestchat.html#_span_style__text_transform__none___typing_indicator__event__span_
     });
 }
@@ -351,7 +349,7 @@ async function createPureCloudChat(firstName, lastName, smoochConversationId, in
             var info = JSON.parse(body);
             console.log('POST /guest/conversations response:', info);
             jwtToken = info.jwt; // JWT Token used for future requests
-            updatePureCloudConversation(smoochConversationId, info.id, info.member.id);
+            updatePureCloudConversation(smoochConversationId, info.id, info.member.id, undefined, undefined, undefined, initialMessage);
 
             // Initiate WebSocket communication with PureCloud (only then will it queue the chat request)
             var webSocket = new WebSocket(info.eventStreamUri);
@@ -359,10 +357,6 @@ async function createPureCloudChat(firstName, lastName, smoochConversationId, in
 
             webSocket.on('open', function () {
                 console.log('WebSocket opened');
-
-
-                // Post initial message from external user
-                //postPureCloudMessage(info.id, info.member.id, initialMessage); // Says conversation is not active
             });
 
             webSocket.on('message', async (message) => {
@@ -457,6 +451,9 @@ async function createPureCloudChat(firstName, lastName, smoochConversationId, in
                                         case 'AGENT':
                                             // Update agent user id
                                             updatePureCloudConversation(currentConversation.smooch.conversationId, currentConversation.purecloud.conversationId, undefined, messageData.eventBody.member.id);
+                                            // Post initial message from external user
+                                            postPureCloudMessage(currentConversation.purecloud.conversationId, currentConversation.purecloud.externalUserId, initialMessage, 'notice');
+                                            // Inform the smooch user there is a connected agent on PureCloud
                                             postSmoochMessage(currentConversation.smooch.appId, currentConversation.smooch.userId, `Hello, my name is ${pureCloudMemberInfo.displayName}. How can I help you?`);
                                             break;
                                         case 'CUSTOMER':
@@ -553,7 +550,7 @@ function postPureCloudMessage(conversationId, memberId, message, messageType) {
                 }
             } else {
                 console.error(body);
-                console.error(response.statusCode);    
+                console.error(response.statusCode);
             }
         }
     });
