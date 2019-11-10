@@ -225,7 +225,7 @@ app.post('/messages', async (req, res) => {
                 postPureCloudMessage(conversation.purecloud.conversationId, conversation.purecloud.externalUserId, req.body.messages[0].text, 'standard');
             } else {
                 console.log('Creating new PureCloud chat...');
-                createPureCloudChat(req.body.appUser.givenName, req.body.appUser.surname, smoochConversationId, req.body.messages[0].text);
+                createPureCloudChat(req.body.appUser.givenName, req.body.appUser.surname, smoochConversationId, req.body.messages[0].text, req.body.messages[0].source.type);
             }
         }
     } catch (error) {
@@ -313,7 +313,7 @@ function getPureCloudMemberInfo(conversationId, memberId) {
 }
 
 // Creates a PureCloud chat conversation
-async function createPureCloudChat(firstName, lastName, smoochConversationId, initialMessage) {
+async function createPureCloudChat(firstName, lastName, smoochConversationId, initialMessage, socialNetwork) {
     console.log(`createPureCloudChat(${firstName}, ${lastName}, ${smoochConversationId})`);
 
     let body = {
@@ -330,7 +330,9 @@ async function createPureCloudChat(firstName, lastName, smoochConversationId, in
                 "customField1Label": "First Name",
                 "customField1": firstName,
                 "customField2Label": "Last Name",
-                "customField2": lastName
+                "customField2": lastName,
+                "customField3Label": "Social Network",
+                "customField3": socialNetwork
             }
         }
     };
