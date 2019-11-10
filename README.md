@@ -4,6 +4,18 @@ This service acts as a bridge between a Smooch webhook and the PureCloud Guest C
 
 >Code is provided as-is. Do not contact Genesys Customer Care if you have issues. Use the `Issues` tab instead and create an issue.
 
+Tested with:
+  * Facebook Messenger
+  * Telegram
+  * WhatsApp
+
+Not tested with:
+  * WeChat (requires an organization/business)
+
+To test:
+  * Twitter (integration can only be created using the Smooch API)
+  * Line
+
 ## Requirements
 
 * [Node.js](https://node.js)
@@ -44,7 +56,7 @@ This service acts as a bridge between a Smooch webhook and the PureCloud Guest C
     * Or you can directly hardcode those values in the code inside the `config` region of the `index.js` file
 * Run `npm start` to start the service
 * Run `ngrok http 8000` to expose your service
-* Configure a new webhook in your Smooch app pointing to your publically-exposed service endpoint followed by `/messages` (e.g. `https://fa0291e0.ngrok.io/messages`). The webhook should be configured with the `AppUser messages` and `User typing` triggers (other triggers are not currently used)
+* Configure a new webhook in your Smooch app pointing to your publically-exposed service endpoint followed by `/messages` (e.g. `https://fa0291e0.ngrok.io/messages`). The webhook should be configured with the `AppUser messages` and `User typing` triggers (other triggers are not currently used. ([all triggers are documented here](https://docs.smooch.io/rest/#webhooks)))
 * Send a message via the channel monitored by Smooch (e.g. Facebook Messenger). This should create chat conversations in PureCloud. Make sure you go `On Queue` to receive these chats.
 
 ### Deploy to Heroku
@@ -57,7 +69,7 @@ To deploy this service to Heroku, do the following:
 * Set the required environment variables by running `heroku config:set <ENVIRONMENT VARIABLE NAME>=<ENVIRONMENT VARIABLE VALUE>` (e.g. `heroku config:set PURECLOUD_ENVIRONMENT=mypurecloud.ie`). Environment variables are listed in the `How to use` section above.
 * Run `git remote -v` to make sure that the remote was added to your list of git remotes
 * Run `git push heroku master` to push your code to the Heroku remote
-* Create a new webhook integration in your Smoosh app with the Heroku followed by `/messages` (e.g. https://serene-ravine-92441.herokuapp.com/messages). Select the `AppUser messages` and `User typing` triggers and click on `Create webhook`.
+* Create a new webhook integration in your Smoosh app with the Heroku followed by `/messages` (e.g. https://serene-ravine-92441.herokuapp.com/messages). Select the `AppUser messages` and `User typing` triggers ([all triggers are documented here](https://docs.smooch.io/rest/#webhooks)) and click on `Create webhook`.
 * This service contains code (search for `startKeepAlive()`) to ping the app every 25 minutes by default and stop after 17 hours. Make sure you set the `HEROKU_APPNAME` environment variable to your app name (e.g. serene-raving-92441) by using `heroku config:set HEROKU_APPNAME=<YOUR APP NAME>` (e.g. `heroku config:set HEROKU_APPNAME=serene-raving-92441`)
 
 #### Heroku CLI useful commands
@@ -70,6 +82,61 @@ To deploy this service to Heroku, do the following:
 * Main entry point is `index.js`. Code has plenty of comments.
 * Set the environment variables on your local machine (see `How to use` section)
 * You can run `npm run start_dev` to start the service. Service will restart when file contents change
+
+## Current Limitations
+
+* Only the first message from the external user (e.g. Facebook messenger user) is passed to the PureCloud chat before it is connected to an agent. More code needs to be added to handle multiple messages before the chat is connected to an agent.
+* Conversation maps (maps relationships between Smooch and PureCloud) are not persistent. If this service is restarted, messages will no longer be passed between Smooch and PureCloud for existing conversations.
+
+## To do
+
+* If smooch conversation id already exists in the conversationsMap array, try to get last agent. Need to save last agentUserId. Do it from Architect?
+* Heroku keepAlive (can't reach serene-ravine-92400.herokuapp.com from within heroku?)
+* Implement typing activity: https://docs.smooch.io/rest/?javascript#conversation-activity from Facebook to PureCloud (set senderId) - NOT RECEIVING NOTIFICATION FROM SMOOCH (trigger is enabled)
+* Age verification from Architect. 3rd party service or can get from Smooch? (FRANK)
+* How to easily support providers other than Smooch? Probably need to redesign conversationsMap array
+
+## Sample messages
+
+Incoming message from Smooch ([message schema](https://docs.smooch.io/rest/#message-schema), [source schema](https://docs.smooch.io/rest/#sourcedestination-schema), [appUser schema](https://docs.smooch.io/rest/#schema)):
+
+```json
+{
+    "trigger": "message:appUser",
+    "app": {
+        "_id": "5dc2b175d08253001025fba5"
+    },
+    "version": "v1.1",
+    "messages": [
+        {
+            "type": "text",
+            "text": "hello",
+            "role": "appUser",
+            "received": 1573420434.483,
+            "name": "Pierrick Lozach",
+            "authorId": "e19ddc5b766a5704af46ad4f",
+            "_id": "5dc87d92ec629d000fb0ff42",
+            "source": {
+                "originalMessageId": "m_IGCOEDYUcNciafwivOSQpKnmoKWtlRy-E6rctV9kvH_p-xaKaU8_JNgcoR1nEnaUxzNFdZ_YpeUifXZaonj2Uw",
+                "originalMessageTimestamp": 1573420433.996,
+                "type": "messenger",
+                "integrationId": "5dc2b1b3d08253001025fef9"
+            }
+        }
+    ],
+    "appUser": {
+        "_id": "e19ddc5b766a5704af46ad4f",
+        "conversationStarted": true,
+        "surname": "Lozach",
+        "givenName": "Pierrick",
+        "signedUpAt": "2019-11-06T11:46:27.516Z",
+        "properties": {}
+    },
+    "conversation": {
+        "_id": "a54ce036bf1b5b13683302ae"
+    }
+}
+```
 
 ## Credits
 
