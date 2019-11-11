@@ -1,10 +1,13 @@
 /******************************************************************************
 
-Look at the README.md file for a high-level overview of this server. This code is best viewed in Microsoft Visual Studio Code. Use the 'Fold All' functionality to fold all code regions.
+Look at the README.md file for a high-level overview of this server. 
+This code is best viewed in Microsoft Visual Studio Code. 
+
+=========
 
 This file contains the code to communicate between Smooch and Genesys PureCloud.
-All conversation-related data is kept in an array called "conversationsMap", structured as follows:
 
+All conversation-related data is kept in an array called "conversationsMap", structured as follows:
 [
     {
         smooch: {
@@ -24,8 +27,8 @@ All conversation-related data is kept in an array called "conversationsMap", str
    }
 ]
 
-Events from Smooch come in via REST API (/message)
-Events from PureCloud are handled via web sockets opened when the chats are created
+Events from Smooch come in via REST API (/messages)
+Events from PureCloud are handled via web sockets opened when the chats are created (see createPureCloudChat() function)
 
 *******************************************************************************/
 

@@ -90,9 +90,9 @@ To deploy this service to Heroku, do the following:
 
 ## To do
 
-* If smooch conversation id already exists in the conversationsMap array, try to get last agent. Need to save last agentUserId. Do it from Architect?
-* Heroku keepAlive (can't reach serene-ravine-92400.herokuapp.com from within heroku?)
-* Implement typing activity: https://docs.smooch.io/rest/?javascript#conversation-activity from Facebook to PureCloud (set senderId) - NOT RECEIVING NOTIFICATION FROM SMOOCH (trigger is enabled)
+* Implement typing activity: https://docs.smooch.io/rest/?javascript#conversation-activity from Facebook to PureCloud (set senderId) - NOT RECEIVING NOTIFICATION FROM SMOOCH (trigger is enabled) - Submitted issue on github: https://github.com/smooch/smooch-core-js/issues/134
+* If smooch conversation id already exists in the conversationsMap array, try to get last agent. Need to save last agentUserId. Do it from Architect? (FRANK)
+* Heroku keepAlive (can't connect to serene-ravine-92400.herokuapp.com from within heroku?)
 * Age verification from Architect. 3rd party service or can get from Smooch? (FRANK)
 * How to easily support providers other than Smooch? Probably need to redesign conversationsMap array
 
