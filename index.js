@@ -238,12 +238,13 @@ app.post('/messages', async (req, res) => {
     }
 });
 
+// Most channels don't support it. See "Typing" line here: https://docs.smooch.io/guide/channel-capabilities/
 function setTypingIndicator(appId, userId) {
     smooch.appUsers.conversationActivity({
         appId: appId,
         userId: userId,
         activityProps: {
-            role: 'appMaker',
+            role: 'appUser',
             type: 'typing:start'
         }
     }).then((response) => {
