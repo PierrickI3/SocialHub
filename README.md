@@ -85,18 +85,14 @@ To deploy this service to Heroku, do the following:
 
 ## Current Limitations
 
-* Only the first messcage from the external user (e.g. Facebook messenger user) is passed to the PureCloud chat before it is connected to an agent. More code needs to be added to handle multiple messages before the chat is connected to an agent.
+* Only the first message from the external user (e.g. Facebook messenger user) is passed to the PureCloud chat before it is connected to an agent. More code needs to be added to handle multiple messages before the chat is connected to an agent.
 * Conversation maps (maps relationships between Smooch and PureCloud) are not persistent. If this service is restarted, messages will no longer be passed between Smooch and PureCloud for existing conversations.
+* If this service is restarted, all current conversation maps are gone and therefore the existing conversations will be unlinked between Smooch and PureCloud.
 
 ## To do
 
-* For Frank
-    * Last agent? If smooch conversation id already exists in the conversationsMap array, try to get last agent. Need to save last agentUserId. Do it from Architect?
-    * Age verification from Architect. 3rd party service or can get from Smooch?
-
-* Others
-    * Heroku keepAlive - Can't connect to serene-ravine-92400.herokuapp.com from within heroku?
-    * How to easily support providers other than Smooch? Probably need to redesign conversationsMap array
+* Heroku keepAlive - Can't connect to serene-ravine-92400.herokuapp.com from within heroku?
+* How to easily support providers other than Smooch? Probably need to redesign conversationsMap array.
 
 ## Sample messages
 
