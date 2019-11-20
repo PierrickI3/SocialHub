@@ -47,7 +47,8 @@ const http = require('http'); //Only used if pinging Heroku app
 
 //#region Global vars
 
-var conversationsMap = [], jwtToken;
+var conversationsMap = []; // See comments at the beginning of this file
+var pureCloudJwtToken; // Holds the PureCloud JWT token
 
 //#endregion
 
@@ -58,9 +59,9 @@ const PORT = process.env.PORT || 8000;
 const SMOOCH_KEYID = process.env.SMOOCH_KEYID || 'app_5dc32a436472c70010691d27';
 const SMOOCH_SECRET = process.env.SMOOCH_SECRET || '3ZuI4afjVc5h1a1819BJrYh1LGi1ddqh7Pb5KTEYDTbznlzjGonrmYG7UAP1OVIwlYlqMlILMHrJaZOarw_S_A';
 
-const PURECLOUD_ORGANIZATIONID = process.env.PURECLOUD_ORGANIZATIONID || '3b03b67a-2349-4a03-8b28-c8ac5c26c49a';
-const PURECLOUD_DEPLOYMENTID = process.env.PURECLOUD_DEPLOYMENTID || '7ff41a97-03c6-498a-8266-237874b39c0c';
-const PURECLOUD_QUEUENAME = process.env.PURECLOUD_QUEUENAME || 'AllAgents';
+const PURECLOUD_ORGANIZATIONID = process.env.PURECLOUD_ORGANIZATIONID || '23fc5db6-62bd-4b6a-bc04-a2c8d93e4e2b';
+const PURECLOUD_DEPLOYMENTID = process.env.PURECLOUD_DEPLOYMENTID || '5083e6f5-9bba-40d8-9cbc-024e80767d1a';
+const PURECLOUD_QUEUENAME = process.env.PURECLOUD_QUEUENAME || 'IQOS Service';
 const PURECLOUD_ENVIRONMENT = process.env.PURECLOUD_ENVIRONMENT || 'mypurecloud.ie';
 
 const HEROKU_APPNAME = process.env.HEROKU_APPNAME;
@@ -297,7 +298,7 @@ function getPureCloudMemberInfo(conversationId, memberId) {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `bearer ${jwtToken}`
+                'Authorization': `bearer ${pureCloudJwtToken}`
             }
         };
 
@@ -354,7 +355,7 @@ async function createPureCloudChat(firstName, lastName, smoochConversationId, in
         if (!error && response.statusCode == 200) {
             var info = JSON.parse(body);
             console.log('POST /guest/conversations response:', info);
-            jwtToken = info.jwt; // JWT Token used for future requests
+            pureCloudJwtToken = info.jwt; // JWT Token used for future requests
             updatePureCloudConversation(smoochConversationId, info.id, info.member.id, undefined, undefined, undefined, initialMessage);
 
             // Initiate WebSocket communication with PureCloud (only then will it queue the chat request)
@@ -430,6 +431,7 @@ async function createPureCloudChat(firstName, lastName, smoochConversationId, in
                                 });
                                 break;
                             case 'standard':
+                            case 'notice':
                                 // A message has been added to the chat. Use sender.id to identify the author of the message.
                                 console.log(`Sender id ${messageData.eventBody.sender.id} === agentUserId ${currentConversation.purecloud.agentUserId}?`);
                                 if (messageData.eventBody.sender.id === currentConversation.purecloud.agentUserId || messageData.eventBody.sender.id === currentConversation.purecloud.workflowId) {
@@ -526,7 +528,7 @@ async function createPureCloudChat(firstName, lastName, smoochConversationId, in
 function postPureCloudMessage(conversationId, memberId, message, messageType) {
     console.log(`====> TO PURECLOUD: ${message} -> PureCloud Conversation Id: ${conversationId}, Member Id: ${memberId}`);
 
-    console.log(`Posting PureCloud Message to conversation ${conversationId} and member ${memberId} with jwt: ${jwtToken}`);
+    console.log(`Posting PureCloud Message to conversation ${conversationId} and member ${memberId} with jwt: ${pureCloudJwtToken}`);
     let body = {
         "body": message,
         "bodyType": messageType
@@ -537,7 +539,7 @@ function postPureCloudMessage(conversationId, memberId, message, messageType) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
+            'Authorization': `Bearer ${pureCloudJwtToken}`
         },
         body: JSON.stringify(body)
     };
@@ -547,12 +549,11 @@ function postPureCloudMessage(conversationId, memberId, message, messageType) {
         if (!error && response.statusCode == 200) {
             console.log('POST /messages response:', info);
         } else {
-            if (info.status === 400 && info.code === 'chat.error.conversation.state') {
+            if ((info.status === 400 && info.code === 'chat.error.conversation.state') || info.status === 403) {
                 console.log('PureCloud conversation no longer exists (or is disconnected)');
                 let conversation = getConversationByPureCloudConversationId(conversationId);
                 if (conversation) {
                     clearPureCloudConversation(conversation.smooch.conversationId);
-                    //TODO Resend the message in a new conversation?
                 }
             } else {
                 console.error(body);
