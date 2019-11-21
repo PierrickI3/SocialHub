@@ -155,7 +155,6 @@ function updatePureCloudConversation(smoochConversationId, pureCloudConversation
             if (workflowId) conversationsMap[index].purecloud.workflowId = workflowId;
 
             returnConversation = conversationsMap[index];
-            console.log(`Smooch conversation ${smoochConversationId} updated: ${JSON.stringify(returnConversation, null, 4)}`);
             break;
         }
     }
