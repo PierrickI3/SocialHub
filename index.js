@@ -462,7 +462,13 @@ async function createPureCloudChat(firstName, lastName, smoochConversationId, in
                                             // Post initial message from external user
                                             postPureCloudMessage(currentConversation.purecloud.conversationId, currentConversation.purecloud.externalUserId, initialMessage, 'notice');
                                             // Inform the smooch user there is a connected agent on PureCloud
-                                            postSmoochMessage(currentConversation.smooch.appId, currentConversation.smooch.userId, `Hello, my name is ${pureCloudMemberInfo.displayName}. How can I help you?`);
+                                            let agentName = pureCloudMemberInfo.displayName;
+                                            if (!agentName) {
+                                              console.log('Agent name is undefined. PureCloudMemberInfo:', pureCloudMemberInfo);
+                                              postSmoochMessage(currentConversation.smooch.appId, currentConversation.smooch.userId, `Hello, How can I help you?`);
+                                            } else {
+                                              postSmoochMessage(currentConversation.smooch.appId, currentConversation.smooch.userId, `Hello, my name is ${pureCloudMemberInfo.displayName}. How can I help you?`);
+                                            }
                                             break;
                                         case 'CUSTOMER':
                                             postSmoochMessage(currentConversation.smooch.appId, currentConversation.smooch.userId, `Hello and welcome!`);
