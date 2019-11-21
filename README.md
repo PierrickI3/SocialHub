@@ -11,8 +11,6 @@ Tested with:
 
 Not tested with:
   * WeChat (requires an organization/business)
-
-To test:
   * Twitter (integration can only be created using the Smooch API)
   * Line
 
@@ -22,6 +20,7 @@ To test:
 * [nGrok](https://ngrok.com) to expose your service with a `https` url if you plan on running this service on your machine (Heroku instructions are also available in this README)
 * A [Genesys PureCloud](https://www.genesys.com/platform/purecloud) organization
 * A [Smooch](https://smooch.io) account (free trials are available)
+* Make sure your PureCloud agents have the `person_agent` name field populated with their full name in their PureCloud profiles
 
 ## Configuration
 
