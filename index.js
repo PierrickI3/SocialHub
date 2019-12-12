@@ -61,7 +61,7 @@ const SMOOCH_SECRET = process.env.SMOOCH_SECRET || '3ZuI4afjVc5h1a1819BJrYh1LGi1
 
 const PURECLOUD_ORGANIZATIONID = process.env.PURECLOUD_ORGANIZATIONID || '23fc5db6-62bd-4b6a-bc04-a2c8d93e4e2b';
 const PURECLOUD_DEPLOYMENTID = process.env.PURECLOUD_DEPLOYMENTID || '5083e6f5-9bba-40d8-9cbc-024e80767d1a';
-const PURECLOUD_QUEUENAME = process.env.PURECLOUD_QUEUENAME || 'IQOS Service';
+const PURECLOUD_QUEUENAME = process.env.PURECLOUD_QUEUENAME || 'TravelBug Support';
 const PURECLOUD_ENVIRONMENT = process.env.PURECLOUD_ENVIRONMENT || 'mypurecloud.ie';
 
 const HEROKU_APPNAME = process.env.HEROKU_APPNAME;
@@ -75,45 +75,6 @@ const smooch = new Smooch({
 
 const app = express();
 app.use(bodyParser.json());
-
-//#endregion
-
-//#region Heroku
-
-var startTime = new Date().getTime();
-function startKeepAlive() {
-    if (!HEROKU_APPNAME) {
-        console.log('Heroku app monitoring disabled');
-        return;
-    }
-
-    console.log(`Enabling app monitoring for: https://${HEROKU_APPNAME}.herokuapp.com every ${HEROKU_POLLINGINTERVAL / 1000} second(s)`);
-    setInterval(function () {
-        if (new Date().getTime() - startTime > 61200000) { // 17 hours (Herokuy only allows free apps to run for 18 hours)
-            clearInterval(interval);
-            return;
-        }
-        var options = {
-            host: `https://${HEROKU_APPNAME}.herokuapp.com`,
-            path: '/ping'
-        };
-        console.log('PING!');
-        http.get(options, function (res) {
-            res.on('data', function (chunk) {
-                try {
-                    // optional logging... disable after it's working
-                    console.log("HEROKU RESPONSE: " + chunk);
-                } catch (err) {
-                    console.log(err.message);
-                }
-            });
-        }).on('error', function (err) {
-            console.log("Error: " + err.message);
-        });
-    }, HEROKU_POLLINGINTERVAL);
-}
-
-startKeepAlive();
 
 //#endregion
 
